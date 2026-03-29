@@ -1,6 +1,6 @@
 class Constants {
-  static const String baseUrl = 'http://localhost:5000/api';
-  
+  static const String baseUrl = 'https://medi-vault-backend-28w8.onrender.com/api';
+
   // Auth endpoints
   static const String registerPatient = '$baseUrl/auth/register/patient';
   static const String registerDoctor = '$baseUrl/auth/register/doctor';
