@@ -8,6 +8,7 @@ import 'upload_record_screen.dart';
 import 'record_list_screen.dart';
 import 'permissions_screen.dart';
 import 'audit_log_screen.dart';
+import 'search_screen.dart';
 
 class PatientDashboard extends StatefulWidget {
   const PatientDashboard({super.key});
@@ -74,6 +75,14 @@ class _PatientDashboardState extends State<PatientDashboard> {
       appBar: AppBar(
         title: const Text('Medi Vault'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchScreen()),
+            ),
+            tooltip: 'Search',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _logout,
@@ -167,6 +176,17 @@ class _PatientDashboardState extends State<PatientDashboard> {
                             context,
                             MaterialPageRoute(
                               builder: (_) => const RecordListScreen(),
+                            ),
+                          ),
+                        ),
+                        _ActionCard(
+                          icon: Icons.search,
+                          label: 'Search Records',
+                          color: const Color(0xFF534AB7),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SearchScreen(),
                             ),
                           ),
                         ),
@@ -307,7 +327,7 @@ class _ActionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withAlpha(25),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 28),
