@@ -61,30 +61,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = false);
 
     if (!mounted) return;
-
     if (response['success'] == true) {
-      final token = response['token'];
-      final user = response['user'];
-
-      await ApiService.saveToken(token);
-      await ApiService.saveUser(user);
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('role', user['role']);
-
       if (!mounted) return;
-
-      if (user['role'] == 'doctor') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const DoctorDashboard()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const PatientDashboard()),
-        );
-      }
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Check your email'),
+          content: const Text(
+            'We sent a verification link to your email address. Please verify your email before logging in.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              child: const Text(
+                'Go to Login',
+                style: TextStyle(color: Color(0xFF0F6E56)),
+              ),
+            ),
+          ],
+        ),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
