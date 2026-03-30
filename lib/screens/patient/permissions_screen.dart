@@ -37,9 +37,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Revoke Access'),
-        content: Text(
-          'Are you sure you want to revoke access for $doctorName?',
-        ),
+        content: Text('Are you sure you want to revoke access for $doctorName?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -73,9 +71,12 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
   }
 
   Future<void> _showGrantDialog() async {
-    final providerIdController = TextEditingController();
+    final emailController = TextEditingController();
     String selectedScope = 'all';
     String selectedCategory = 'lab_report';
+    Map<String, dynamic>? foundDoctor;
+    bool isSearching = false;
+    String searchError = '';
 
     final List<Map<String, String>> categories = [
       {'value': 'lab_report', 'label': 'Lab Report'},
@@ -111,109 +112,224 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              TextField(
-                controller: providerIdController,
-                decoration: const InputDecoration(
-                  labelText: 'Doctor User ID',
-                  prefixIcon: Icon(Icons.person_search),
-                  hintText: 'Enter the doctor\'s user ID',
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Access Scope',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Column(
+              Row(
                 children: [
-                  RadioListTile<String>(
-                    title: const Text('All records'),
-                    value: 'all',
-                    groupValue: selectedScope,
-                    activeColor: const Color(0xFF0F6E56),
-                    onChanged: (value) =>
-                        setModalState(() => selectedScope = value!),
+                  Expanded(
+                    child: TextField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: 'Doctor email address',
+                        prefixIcon: Icon(Icons.email_outlined),
+                        hintText: 'Enter doctor\'s email',
+                      ),
+                    ),
                   ),
-                  RadioListTile<String>(
-                    title: const Text('By category'),
-                    value: 'category',
-                    groupValue: selectedScope,
-                    activeColor: const Color(0xFF0F6E56),
-                    onChanged: (value) =>
-                        setModalState(() => selectedScope = value!),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: isSearching
+                        ? null
+                        : () async {
+                            if (emailController.text.trim().isEmpty) return;
+                            setModalState(() {
+                              isSearching = true;
+                              searchError = '';
+                              foundDoctor = null;
+                            });
+                            final response = await ApiService.get(
+                              '${Constants.searchDoctor}?email=${emailController.text.trim()}',
+                            );
+                            setModalState(() {
+                              isSearching = false;
+                              if (response['success'] == true) {
+                                foundDoctor = response['doctor'];
+                              } else {
+                                searchError = response['message'] ?? 'Doctor not found';
+                              }
+                            });
+                          },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(60, 52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: isSearching
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.search),
                   ),
                 ],
               ),
-              if (selectedScope == 'category') ...[
+              if (searchError.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: selectedCategory,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                  ),
-                  items: categories.map((cat) {
-                    return DropdownMenuItem(
-                      value: cat['value'],
-                      child: Text(cat['label']!),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setModalState(() => selectedCategory = value);
-                    }
-                  },
+                Text(
+                  searchError,
+                  style: const TextStyle(color: Colors.red, fontSize: 13),
                 ),
               ],
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () async {
-                  if (providerIdController.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please enter a doctor ID'),
-                        backgroundColor: Colors.red,
+              if (foundDoctor != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F6E56).withAlpha(20),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF0F6E56).withAlpha(50),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle,
+                        color: Color(0xFF0F6E56),
                       ),
-                    );
-                    return;
-                  }
-
-                  final body = {
-                    'provider_user_id': providerIdController.text.trim(),
-                    'scope_type': selectedScope,
-                    if (selectedScope == 'category')
-                      'shared_category': selectedCategory,
-                  };
-
-                  final response = await ApiService.post(
-                    Constants.grantPermission,
-                    body,
-                  );
-
-                  if (!context.mounted) return;
-                  Navigator.pop(context);
-
-                  if (response['success'] == true) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Access granted successfully'),
-                        backgroundColor: Color(0xFF0F6E56),
-                      ),
-                    );
-                    _loadPermissions();
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          response['message'] ?? 'Failed to grant access',
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              foundDoctor!['name'],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (foundDoctor!['specialization'] != null &&
+                                foundDoctor!['specialization'].isNotEmpty)
+                              Text(
+                                foundDoctor!['specialization'],
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            if (foundDoctor!['organisation_name'] != null &&
+                                foundDoctor!['organisation_name'].isNotEmpty)
+                              Text(
+                                foundDoctor!['organisation_name'],
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                          ],
                         ),
-                        backgroundColor: Colors.red,
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Access Scope',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        title: const Text('All records'),
+                        subtitle: const Text('Doctor can see all your records'),
+                        leading: Radio<String>(
+                          value: 'all',
+                          groupValue: selectedScope,
+                          activeColor: const Color(0xFF0F6E56),
+                          onChanged: (value) =>
+                              setModalState(() => selectedScope = value!),
+                        ),
+                        onTap: () =>
+                            setModalState(() => selectedScope = 'all'),
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        title: const Text('By category'),
+                        subtitle: const Text('Doctor can only see a specific category'),
+                        leading: Radio<String>(
+                          value: 'category',
+                          groupValue: selectedScope,
+                          activeColor: const Color(0xFF0F6E56),
+                          onChanged: (value) =>
+                              setModalState(() => selectedScope = value!),
+                        ),
+                        onTap: () =>
+                            setModalState(() => selectedScope = 'category'),
+                      ),
+                    ],
+                  ),
+                ),
+                if (selectedScope == 'category') ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedCategory,
+                    decoration: const InputDecoration(
+                      labelText: 'Select category',
+                      prefixIcon: Icon(Icons.category),
+                    ),
+                    items: categories.map((cat) {
+                      return DropdownMenuItem(
+                        value: cat['value'],
+                        child: Text(cat['label']!),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setModalState(() => selectedCategory = value);
+                      }
+                    },
+                  ),
+                ],
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () async {
+                    final body = {
+                      'provider_user_id': foundDoctor!['user_id'],
+                      'scope_type': selectedScope,
+                      if (selectedScope == 'category')
+                        'shared_category': selectedCategory,
+                    };
+
+                    final response = await ApiService.post(
+                      Constants.grantPermission,
+                      body,
                     );
-                  }
-                },
-                child: const Text('Grant Access'),
-              ),
+
+                    if (!context.mounted) return;
+                    Navigator.pop(context);
+
+                    if (response['success'] == true) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Access granted successfully'),
+                          backgroundColor: Color(0xFF0F6E56),
+                        ),
+                      );
+                      _loadPermissions();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            response['message'] ?? 'Failed to grant access',
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Grant Access'),
+                ),
+              ],
             ],
           ),
         ),
@@ -285,8 +401,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                           leading: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color:
-                                  const Color(0xFF0F6E56).withOpacity(0.1),
+                              color: const Color(0xFF0F6E56).withAlpha(25),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
@@ -312,8 +427,7 @@ class _PermissionsScreenState extends State<PermissionsScreen> {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0F6E56)
-                                      .withOpacity(0.1),
+                                  color: const Color(0xFF0F6E56).withAlpha(25),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(

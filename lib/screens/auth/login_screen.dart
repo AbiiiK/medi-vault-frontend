@@ -5,6 +5,7 @@ import '../../utils/constants.dart';
 import '../patient/patient_dashboard.dart';
 import '../doctor/doctor_dashboard.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -171,7 +172,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 24),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ForgotPasswordScreen(),
+                          ),
+                        ),
+                        child: const Text(
+                          'Forgot password?',
+                          style: TextStyle(
+                            color: Color(0xFF0F6E56),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: _isLoading ? null : _login,
                       child: _isLoading

@@ -13,7 +13,8 @@ class Constants {
   static const String records = '$baseUrl/records';
   static const String uploadRecord = '$baseUrl/records/upload';
   static const String search = '$baseUrl/search';
-
+  static const String searchDoctor = '$baseUrl/auth/search-doctor';
+  
   // Permission endpoints
   static const String permissions = '$baseUrl/permissions';
   static const String grantPermission = '$baseUrl/permissions/grant';
