@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/record_model.dart';
 import '../../services/api_service.dart';
 import '../../utils/constants.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RecordDetailScreen extends StatefulWidget {
   final RecordModel record;
@@ -75,19 +76,28 @@ class _RecordDetailScreenState extends State<RecordDetailScreen> {
   }
 
   Future<void> _logDownload() async {
-    await ApiService.post(
+    final response = await ApiService.post(
       '${Constants.records}/${widget.record.id}/download',
       {},
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Download logged. Opening file URL...'),
-        backgroundColor: Color(0xFF0F6E56),
-      ),
-    );
-  }
 
+    if (response['success'] == true) {
+      final url = widget.record.filePath;
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open file'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
   Color get _categoryColor {
     switch (widget.record.category) {
       case 'lab_report': return const Color(0xFF185FA5);
